@@ -11,7 +11,7 @@ hands = {1: 'Rock', 2: 'Paper', 3: 'Scissors', 4: 'Lizard', 5: 'Spock'}
 history = []
 
 
-class Options:
+class RPSLS:
     
     def throw(self):
         return hands[random.randrange(1,6)]
@@ -32,27 +32,27 @@ class Options:
             return history.append((self.name, op_throw, 'loss'))
 
 
-class Rock(Options):
+class Rock(RPSLS):
     def __init__(self):
         self.name = 'Rock'
 
 
-class Paper(Options):
+class Paper(RPSLS):
     def __init__(self):
         self.name = 'Paper'
 
 
-class Scissors(Options):
+class Scissors(RPSLS):
     def __init__(self):
         self.name = 'Scissors'
 
 
-class Lizard(Options):
+class Lizard(RPSLS):
     def __init__(self):
         self.name = 'Lizard'
 
 
-class Spock(Options):
+class Spock(RPSLS):
     def __init__(self):
         self.name = 'Spock'
 
