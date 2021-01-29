@@ -16,7 +16,7 @@ class RPSLS:
     def throw(self):
         return hands[random.randrange(1,6)]
 
-    def check_result(self):
+    def get_result(self):
         op_throw = self.throw()
         
         if op_throw in combos[self.name]:
