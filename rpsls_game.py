@@ -1,21 +1,25 @@
-import pygame, random
+import pygame, random, os
 
 # Import pygame.locals for easier access to key coordinates
 from pygame.locals import *
-clock = pygame.time.Clock()
-
-# Initialize pygame
-pygame.init()
 
 # Define constants for the screen width and height
-SCREEN_WIDTH = 1000
-SCREEN_HEIGHT = 710
-SCREEN_CENTER =  ( int(SCREEN_WIDTH/2), int(SCREEN_HEIGHT/2) )
-BUTTON_WIDTH = 124
-BUTTON_ROW = int(SCREEN_HEIGHT/1.4)
-BUTTON_SURF = (150,800)
-SPACING = 15
+WIN_WD = 350
+WIN_HT = 500
+WIN_CENT =  ( WIN_WD//2, WIN_HT//2 )
+WIN_BLUE = (35, 37, 58)
+BUTTON_WD = 62
+BUTTON_HT = 62
+BUTTON_ROW = WIN_HT - BUTTON_HT - 20
+ROCK_POS = (WIN_WD//2 - BUTTON_WD//2 - BUTTON_WD*2 - 12, BUTTON_ROW)
+SCISSORS_POS = (WIN_WD//2 - BUTTON_WD//2 - BUTTON_WD - 6, BUTTON_ROW)
+PAPER_POS = (WIN_WD//2 - BUTTON_WD//2, BUTTON_ROW)
+LIZARD_POS = (WIN_WD//2 - BUTTON_WD//2 + BUTTON_WD + 6, BUTTON_ROW)
+SPOCK_POS = (WIN_WD//2 - BUTTON_WD//2 + BUTTON_WD*2 + 12, BUTTON_ROW)
 
+
+
+# Dictionary of Characters, Actions, and Images
 combos = {
 	'Rock': {
 		'Scissors': 'crushes',
@@ -55,151 +59,122 @@ combos = {
 
 history = []
 
-
-
+# Initialize pygame
+pygame.init()
+pygame.font.init()
 
 # Create the screen object
 # The size is determined by the constant SCREEN_WIDTH and SCREEN_HEIGHT
+WIN = pygame.display.set_mode((WIN_WD, WIN_HT))
+WIN.fill(WIN_BLUE)
+clock = pygame.time.Clock()
+TEXT_RECT = pygame.Surface((WIN_WD,100))
+TEXT_RECT.fill(WIN_BLUE)
+base_font = pygame.font.Font(None,25)
 
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-button_screen = pygame.Surface(BUTTON_SURF)
+
+# Game functions
+def display_buttons(rock,paper,scissors,lizard,spock):
+	ROCK_BUTTON = WIN.blit(rock.button_surf, ROCK_POS )
+	PAPER_BUTTON = WIN.blit(paper.button_surf, SCISSORS_POS )
+	SCISSORS_BUTTON = WIN.blit(scissors.button_surf, PAPER_POS )
+	LIZARD_BUTTON = WIN.blit(lizard.button_surf, LIZARD_POS )
+	SPOCK_BUTTON = WIN.blit(spock.button_surf, SPOCK_POS )
 
 
-
-
-def opp_hand():
+def random_hand():
 	hands = [key for key in combos.keys()]
 	return hands[random.randint(0,4)]
 
-def button_click(x, y):
-	if (rock_button.left <= x <= rock_button.right and rock_button.top <= y <= rock_button.bottom):
-			rock.play()
-	elif (paper_button.left <= x <= paper_button.right and paper_button.top <= y <= paper_button.bottom):
-			paper.play()
-	elif (scissors_button.left <= x <= scissors_button.right and scissors_button.top <= y <= scissors_button.bottom):
-			scissors.play()
-	elif (lizard_button.left <= x <= lizard_button.right and lizard_button.top <= y <= lizard_button.bottom):
-			lizard.play()
-	elif (spock_button.left <= x <= spock_button.right and spock_button.top <= y <= spock_button.bottom):
-			spock.play()
-	elif (op_rock_button.left <= x <= op_rock_button.right and op_rock_button.top <= y <= op_rock_button.bottom):
-			rock.play()
-	elif (op_paper_button.left <= x <= op_paper_button.right and op_paper_button.top <= y <= op_paper_button.bottom):
-			paper.play()
-	elif (op_scissors_button.left <= x <= op_scissors_button.right and op_scissors_button.top <= y <= op_scissors_button.bottom):
-			scissors.play()
-	elif (op_lizard_button.left <= x <= op_lizard_button.right and op_lizard_button.top <= y <= op_lizard_button.bottom):
-			lizard.play()
-	elif (op_spock_button.left <= x <= op_spock_button.right and op_spock_button.top <= y <= op_spock_button.bottom):
-			spock.play()
+def get_result(obj):
+	op_hand = random_hand()
+	TEXT_RECT.fill(WIN_BLUE)
+
+	if op_hand in combos[obj.name]:
+		results = "{} {} {}. You win.".format(obj.name, combos[obj.name][op_hand], op_hand)
+		results_surf = base_font.render(results,True,(255,255,255))
+		results_size = base_font.size(results)
+		return TEXT_RECT.blit(results_surf,( (WIN_WD-results_size[0]) //2  , 0) ) 
+
+	elif op_hand == obj.name:
+		results = "It's a tie."
+		results_surf = base_font.render(results,True,(255,255,255))
+		results_size = base_font.size(results)
+		return TEXT_RECT.blit(results_surf,( (WIN_WD-results_size[0]) //2  , 0) )
+
+	else:
+		results = "{} {} {}. You lose.".format(op_hand, combos[op_hand][obj.name], obj.name)
+		results_surf = base_font.render(results,True,(255,255,255))
+		results_size = base_font.size(results)
+		return TEXT_RECT.blit(results_surf,( (WIN_WD-results_size[0]) //2  , 0) )
+
+
 
 # Define a RPSLS object by extending pygame.sprite.Sprite
 # The surface drawn on the screen is now an attribute of 'RPSLS'
-
 class RPSLS(pygame.sprite.Sprite):
 	def __init__(self, name):
 		super(RPSLS, self).__init__()
+		
 		self.name = name
-
-		self.button = combos[self.name]['Button']
-		self.button_surf = pygame.image.load(self.button).convert_alpha()
+# Button Images
+		self.button_img = pygame.image.load(combos[self.name]['Button']).convert_alpha()
+		self.button_surf = pygame.transform.scale(self.button_img,(BUTTON_WD,BUTTON_HT))
+		self.button_rect = self.button_surf.get_rect( center = (BUTTON_WD//2, BUTTON_HT//2) )
 		self.button_flip = pygame.transform.flip(self.button_surf, 1, 0)
-
-		self.button_rect = self.button_surf.get_rect( center=(62,62) )
-		self.button_flip_rect = self.button_flip.get_rect( center=(62,62) )
-
-	def play(self):
-		op_hand = opp_hand()
-		if op_hand in combos[self.name]:
-			print(f'{self.name} {combos[self.name][op_hand]} {op_hand}. You win.')
-			return history.append((self.name, op_hand, 'Win'))
-
-		elif op_hand == self.name:
-			print("It's a tie.")
-			return history.append((self.name, op_hand, 'Tie'))
-
-		else:
-			print(f'{op_hand} {combos[op_hand][self.name]} {self.name}. You lose.')
-			return history.append((self.name, op_hand, 'Loss'))
-
+		self.button_flip_rect = self.button_flip.get_rect( center = (BUTTON_WD//2, BUTTON_HT//2) )
+# Action Dictionary, self.action['opponents hand'] > action
+		self.action = combos[self.name]
+		
 
 rock = RPSLS('Rock')
-rock.walk = combos[rock.name]['Sprites']
-
 paper = RPSLS('Paper')
-paper.walk = combos[paper.name]['Sprites']
-
 scissors = RPSLS('Scissors')
-scissors.walk = combos[scissors.name]['Sprites']
-
 lizard = RPSLS('Lizard')
-lizard.walk = combos[lizard.name]['Sprites'][:4]
-lizard.die = combos[lizard.name]['Sprites'][4:]
-
-
 spock = RPSLS('Spock')
-spock.walk = combos[spock.name]['Sprites']
 
 
 
 # Variable to keep the main loop running
-
 running = True
 
 # Main loop
-
 while running:
-
-# Look at every event in the queue
-
-	for event in pygame.event.get():
-# Did the user hit a key?
-
-		if event.type == KEYDOWN:
-# Was it the Escape key? If so, stop the loop.
-
-			if event.key == K_ESCAPE:
-				running = False
-# Did the user click the window close button? If so, stop the loop.
-
-		elif event.type == QUIT:
-			running = False
-# Button mapping
-
-		elif event.type == MOUSEBUTTONDOWN:
-			click = pygame.mouse.get_pos()
-			button_click(click[0],click[1])
-
-			
-			
-# Fill the screen with color
-
-	screen.fill((35, 37, 58))
-	button_screen.fill( (15, 13, 38) )
-
+	clock.tick(60)
 
 # Draw the button on the screen
+	display_buttons(rock,paper,scissors,lizard,spock)
+	WIN.blit(TEXT_RECT,(0,20))
 
-	screen.blit(button_screen, (0,0) )
-	screen.blit(button_screen, (850,0) )
+# Look at every event in the queue
+	for event in pygame.event.get():
+		if event.type == QUIT:
+			running = False
+		elif event.type == KEYDOWN:
+			if event.key == K_ESCAPE:
+				running = False
+# Button mapping
+		elif event.type == MOUSEBUTTONDOWN:
+			click = pygame.mouse.get_pos()
+			
+			
+			if ROCK_POS[0] <= click[0] <= ROCK_POS[0] + BUTTON_WD and ROCK_POS[1] <= click[1] <= ROCK_POS[1] + BUTTON_HT:
+				get_result(rock)
+			elif SCISSORS_POS[0] <= click[0] <= SCISSORS_POS[0] + BUTTON_WD and SCISSORS_POS[1] <= click[1] <= SCISSORS_POS[1] + BUTTON_HT:
+				get_result(paper)
+			elif PAPER_POS[0] <= click[0] <= PAPER_POS[0] + BUTTON_WD and PAPER_POS[1] <= click[1] <= PAPER_POS[1] + BUTTON_HT:
+				get_result(scissors)
+			elif LIZARD_POS[0] <= click[0] <= LIZARD_POS[0] + BUTTON_WD and LIZARD_POS[1] <= click[1] <= LIZARD_POS[1] + BUTTON_HT:
+				get_result(lizard)
+			elif SPOCK_POS[0] <= click[0] <= SPOCK_POS[0] + BUTTON_WD and SPOCK_POS[1] <= click[1] <= SPOCK_POS[1] + BUTTON_HT:
+				get_result(spock)
+				
+			
+	
 
-	rock_button = screen.blit(rock.button_flip, (13, 0 + SPACING) )
-	op_rock_button = screen.blit(rock.button_surf, (850 + 13, 0 + SPACING) )
 
-	paper_button = screen.blit(paper.button_surf, (13, 124 + 2 * SPACING) )
-	op_paper_button = screen.blit(paper.button_flip, (850 + 13, 124 + 2 * SPACING) )
 
-	scissors_button = screen.blit(scissors.button_flip, (13, 248 + 3 * SPACING) )
-	op_scissors_button = screen.blit(scissors.button_surf, (850 + 13, 248 + 3 * SPACING) )
-
-	lizard_button = screen.blit(lizard.button_surf, (13, 372 + 4 * SPACING) )
-	op_lizard_button = screen.blit(lizard.button_flip, (850 + 13, 372 + 4 * SPACING) )
-
-	spock_button = screen.blit(spock.button_flip, (13, 496 + 5 * SPACING) )
-	op_spock_button = screen.blit(spock.button_surf, (850 + 13, 496 + 5 * SPACING) )
 
 # Update the display
-
 	pygame.display.flip()
 
-	clock.tick(60)
